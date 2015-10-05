@@ -112,8 +112,7 @@ class PermissionController extends AppController
     {
         $this->request->allowMethod(['post', 'synchronize']);
                 
-        debug($this->Acl->synchronize());
-        exit;
+        $this->Acl->synchronize();
         $this->Flash->success(__('Synchronized successfully!'));
         
         return $this->redirect(['action' => 'add']);
