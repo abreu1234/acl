@@ -5,15 +5,8 @@
     </ul>
 </nav>
 <div class="permission form large-9 medium-8 columns content">
-    <?= $this->Form->create($permission) ?>
     <fieldset>
         <legend><?= __('Add Permission') ?></legend>
-        <?php
-            echo $this->Form->input('controller');
-            echo $this->Form->input('action');
-            echo $this->Form->input('controller_action', ['required' => false]);
-        ?>
+        <?= $this->Form->postLink(__('Synchronize'), ['action' => 'synchronize']) ?>
     </fieldset>
-    <?= $this->Form->button(__('Submit')) ?>
-    <?= $this->Form->end() ?>
 </div>

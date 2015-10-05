@@ -102,4 +102,21 @@ class PermissionController extends AppController
         }
         return $this->redirect(['action' => 'index']);
     }
+    
+    /**
+     * Synchronizes all controllers and existing actions to the database
+     * 
+     * @return void Redirects to add.
+     */
+    public function synchronize() 
+    {
+        $this->request->allowMethod(['post', 'synchronize']);
+                
+        debug($this->Acl->synchronize());
+        exit;
+        $this->Flash->success(__('Synchronized successfully!'));
+        
+        return $this->redirect(['action' => 'add']);
+    }
+        
 }
