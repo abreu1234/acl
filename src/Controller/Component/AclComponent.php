@@ -26,10 +26,11 @@ class AclComponent extends Component
      */
     public function check()
     {
-        if( isset($this->_authorized[$controller]) && in_array($action, $this->_authorized[$controller]) ) return true;
-
-        $action = $this->request->param('action');
+    	$action = $this->request->param('action');
         $controller = $this->request->param('controller');
+
+        if( isset($this->_authorized[$controller]) && in_array($action, $this->_authorized[$controller]) ) return true;
+        
         $UserGroupPermission = TableRegistry::get('UserGroupPermission');
         $Permission = TableRegistry::get('Permission');
 
@@ -61,7 +62,8 @@ class AclComponent extends Component
      * Allows controllers and actions for all users
      * @param array $_authorized
      */
-    public function allow(array $_authorized) {
+    public function allow(array $_authorized) 
+    {
         $this->_authorized = array_merge($this->_authorized, $_authorized);
     }
 
