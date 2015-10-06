@@ -27,7 +27,7 @@ class PermissionFixture extends TestFixture
         'id' => ['type' => 'integer', 'length' => 11, 'unsigned' => false, 'null' => false, 'default' => null, 'comment' => '', 'autoIncrement' => true, 'precision' => null],
         'controller' => ['type' => 'string', 'length' => 20, 'null' => false, 'default' => null, 'comment' => '', 'precision' => null, 'fixed' => null],
         'action' => ['type' => 'string', 'length' => 100, 'null' => false, 'default' => null, 'comment' => '', 'precision' => null, 'fixed' => null],
-        'controller_action' => ['type' => 'string', 'length' => 130, 'null' => false, 'default' => null, 'comment' => '', 'precision' => null, 'fixed' => null],
+        'unique_string' => ['type' => 'string', 'length' => 130, 'null' => false, 'default' => null, 'comment' => '', 'precision' => null, 'fixed' => null],
         '_constraints' => [
             'primary' => ['type' => 'primary', 'columns' => ['id'], 'length' => []],
         ],
@@ -48,7 +48,7 @@ class PermissionFixture extends TestFixture
             'id' => 1,
             'controller' => 'Lorem ipsum dolor ',
             'action' => 'Lorem ipsum dolor sit amet',
-            'controller_action' => 'Lorem ipsum dolor sit amet'
+            'unique_string' => 'Lorem ipsum dolor sit amet'
         ],
     ];
 }

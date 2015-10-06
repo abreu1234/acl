@@ -9,7 +9,7 @@ use Cake\ORM\Entity;
  * @property int $id
  * @property string $controller
  * @property string $action
- * @property string $controller_action
+ * @property string $unique_string
  */
 class Permission extends Entity
 {

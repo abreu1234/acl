@@ -49,29 +49,12 @@ class PermissionTable extends Table
             ->requirePresence('action', 'create')
             ->notEmpty('action');
 
-        $validator->add('controller_action', 'unique', [
+        $validator->add('unique_string', 'unique', [
                 'rule' => 'validateUnique',
                 'provider' => 'table'
-            ])->allowEmpty('controller_action', 'create');
+            ])->notEmpty('unique_string', 'create');
 
         return $validator;
-    }
-
-    public function beforeSave(Event $event, Entity $entity, \ArrayObject $options)
-    {
-        $entity->set('controller_action', trim($entity->controller.'->'.$entity->action));
-
-        $validator = new Validator();
-        $validator->provider('table', $this);
-        $validator->add('controller_action', 'unique', [
-            'rule' => 'validateUnique',
-            'provider' => 'table'
-        ]);
-
-        $data = ['controller_action' => $entity->controller_action];
-        $errors = $validator->errors($data);
-
-        return empty($errors);
     }
 
 }

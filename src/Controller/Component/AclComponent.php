@@ -18,7 +18,7 @@ class AclComponent extends Component
      * @var array
      */
     private $_authorized = [
-        'Permission' => ['index','add','delete','edit','synchronize'],
+        'Permission' => ['index','sync','synchronize'],
         'UserGroupPermission' => ['index','add','delete','edit']
     ];
 
@@ -73,52 +73,61 @@ class AclComponent extends Component
     /**
      * Synchronizes all controllers and existing actions to the database
      */
-    public function synchronize() 
+    public function synchronize($prefix = '')
     {
+        $controllers_path = '../src/Controller/'.$prefix;
+        $class_path = 'App\\Controller\\';
+        $class_path .= empty($prefix) ? '' : $prefix.'\\';
         $Permission = TableRegistry::get('Permission');
         $permission_ids = [];
-        $files = scandir('../src/Controller/');
+        $files = scandir($controllers_path);
         $ignore_list = [
             'controller' => ['.','..','Component','AppController.php'],
             'action' => ['beforeFilter', 'afterFilter', 'initialize']
         ];
-                
+
         foreach($files as $file) {
-            
-            if(!in_array($file, $ignore_list['controller'])) {
-                
-                $controller_name = str_replace('Controller', '', explode('.', $file)[0]);
-                $class_name = 'App\\Controller\\'.$controller_name.'Controller';
-                $class = new ReflectionClass($class_name);
-                $all_actions = $class->getMethods(ReflectionMethod::IS_PUBLIC);
-                
-                foreach($all_actions as $action) {
-                    
-                    if($action->class == $class_name && !in_array($action->name, $ignore_list['action'])) { 
-                        
-                        $permission_id = $Permission->find()
-                            ->select(['id'])
-                            ->where(['action' => $action->name, 'controller' => $controller_name])
-                            ->first();
-                        
-                        if( is_null($permission_id) ) {
-                            $new_permission = $Permission->newEntity();
-                            $new_permission->action = $action->name;
-                            $new_permission->controller = $controller_name;
-                            
-                            if( $Permission->save($new_permission) ) 
-                                array_push($permission_ids, $new_permission->id);                           
-                            
-                        }else {
-                            array_push($permission_ids, $permission_id->id);
-                        }
-                        
-                    }                    
-                }                
+
+            if(in_array($file, $ignore_list['controller'])) continue;
+
+            if( is_dir($controllers_path.$file) && empty($prefix) ) {
+                $this->synchronize($file);
+                continue;
+            }
+
+            $controller_name = str_replace('Controller', '', explode('.', $file)[0]);
+            $class_name = $class_path.$controller_name.'Controller';
+            $class = new ReflectionClass($class_name);
+            $all_actions = $class->getMethods(ReflectionMethod::IS_PUBLIC);
+
+            foreach($all_actions as $action) {
+
+                if($action->class != $class_name || in_array($action->name, $ignore_list['action'])) continue;
+
+                $unique_string = $prefix . '/' . $controller_name . '->' . $action->name;
+                $permission_id = $Permission->find()
+                    ->select(['id'])
+                    ->where(['unique_string' => $unique_string])
+                    ->first();
+
+                if (is_null($permission_id)) {
+                    $new_permission = $Permission->newEntity();
+                    $new_permission->action = $action->name;
+                    $new_permission->controller = $controller_name;
+                    $new_permission->prefix = $prefix;
+                    $new_permission->unique_string = $unique_string;
+
+                    if ($Permission->save($new_permission))
+                        array_push($permission_ids, $new_permission->id);
+
+                } else {
+                    array_push($permission_ids, $permission_id->id);
+                }
+
             }
         }
         
-        $Permission->deleteAll(['id NOT IN'=>$permission_ids]);
+        $Permission->deleteAll(['id NOT IN'=>$permission_ids, 'prefix'=>$prefix]);
     }
 
 }
