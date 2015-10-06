@@ -14,7 +14,8 @@ class AclComponent extends Component
 
     /**
      * Controllers and actions allowed for all users
-     * @var array
+     * 
+     * @var array Prefix => Controller => Action
      */
     private $_authorized = [
         '' => [
@@ -22,11 +23,26 @@ class AclComponent extends Component
             'UserGroupPermission' => ['index','add','delete','edit']
         ]
     ];
+    
+    /**
+     * Controllers and actions ignored during synchronization
+     * 
+     * @var Array Prefix => Controller => Action
+     */
+    private $_sync_ignore_list = [
+        '*' => [
+            '.','..','Component','AppController.php',
+            '*'  => ['beforeFilter', 'afterFilter', 'initialize']
+        ]
+    ];
 
     public function initialize( array $config )
     {
         if( isset($config['authorize']) )
             $this->_authorized = array_merge_recursive($this->_authorized, $config['authorize']);
+        
+        if( isset($config['ignore']) )
+            $this->_sync_ignore_list = array_merge_recursive($this->_sync_ignore_list, $config['ignore']);
     }
 
     /**
@@ -38,8 +54,8 @@ class AclComponent extends Component
     	$action = $this->request->param('action');
         $controller = $this->request->param('controller');
         $prefix = ($this->request->param('prefix') != false ) ? $this->request->param('prefix') : '';
-
-        if( isset($this->_authorized[$prefix]) && isset($this->_authorized[$prefix][$controller]) &&
+        
+        if( isset($this->_authorized[$prefix][$controller]) &&
             in_array($action, $this->_authorized[$prefix][$controller]) ) return true;
         
         $user_id = $this->request->session()->read('Auth.User.id');
@@ -78,14 +94,12 @@ class AclComponent extends Component
         $Permission = TableRegistry::get('Permission');
         $permission_ids = [];
         $files = scandir($controllers_path);
-        $ignore_list = [
-            'controller' => ['.','..','Component','AppController.php'],
-            'action' => ['beforeFilter', 'afterFilter', 'initialize']
-        ];
-
+        
         foreach($files as $file) {
 
-            if(in_array($file, $ignore_list['controller'])) continue;
+            if(in_array($file, $this->_sync_ignore_list['*']) ||
+                ( isset($this->_sync_ignore_list[$prefix]) && in_array($file, $this->_sync_ignore_list[$prefix]) )
+            ) continue;
 
             if( is_dir($controllers_path.$file) && empty($prefix) ) {
                 $this->synchronize($file);
@@ -99,7 +113,11 @@ class AclComponent extends Component
 
             foreach($all_actions as $action) {
 
-                if($action->class != $class_name || in_array($action->name, $ignore_list['action'])) continue;
+                if($action->class != $class_name || in_array($action->name, $this->_sync_ignore_list['*']['*']) ||
+                    ( isset($this->_sync_ignore_list['*'][$controller_name]) && in_array($action->name, $this->_sync_ignore_list['*'][$controller_name]) ) ||                      
+                    ( isset($this->_sync_ignore_list[$prefix]['*']) && in_array($action->name, $this->_sync_ignore_list[$prefix]['*']) ) ||                      
+                    ( isset($this->_sync_ignore_list[$prefix][$controller_name]) && in_array($action->name, $this->_sync_ignore_list[$prefix][$controller_name]) )
+                ) continue;
 
                 $unique_string = $prefix . '/' . $controller_name . '->' . $action->name;
                 $permission_id = $Permission->find()
