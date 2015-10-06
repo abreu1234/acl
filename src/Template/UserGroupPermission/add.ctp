@@ -10,10 +10,17 @@
     <?= $this->Form->create($userGroupPermission) ?>
     <fieldset>
         <legend><?= __('Add User Group Permission') ?></legend>
-        <?php
-            echo $this->Form->input('group_or_user');
-            echo $this->Form->input('group_or_user_id', ['type' => 'text', 'label' => 'Group or User id']);
-            echo $this->Form->input('permission_id', ['options' => $permission]);
+        <?php            
+            foreach ( $users as $user ) 
+                $options_users['Users']['user-'.$user->id] = $user->email;
+            echo $this->Form->label('group_or_user_id');
+            echo $this->Form->select('group_or_user_id', $options_users);
+            
+            foreach ( $permission as $_permition )
+                $options_per[$_permition->id] = $_permition->unique_string;
+            echo $this->Form->label('permission_id');
+            echo $this->Form->select('permission_id', $options_per);
+            
             echo $this->Form->input('allow');
         ?>
     </fieldset>

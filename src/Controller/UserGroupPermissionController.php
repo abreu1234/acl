@@ -2,6 +2,7 @@
 namespace Acl\Controller;
 
 use Acl\Controller\AppController;
+use Cake\ORM\TableRegistry;
 
 /**
  * UserGroupPermission Controller
@@ -51,6 +52,10 @@ class UserGroupPermissionController extends AppController
         $userGroupPermission = $this->UserGroupPermission->newEntity();
         if ($this->request->is('post')) {
             $userGroupPermission = $this->UserGroupPermission->patchEntity($userGroupPermission, $this->request->data);
+            $group_or_user_id = explode("-",$this->request->data['group_or_user_id']);
+            $userGroupPermission->group_or_user = isset($group_or_user_id[0]) ? $group_or_user_id[0] : null;
+            $userGroupPermission->group_or_user_id = isset($group_or_user_id[1]) ? $group_or_user_id[1] : null;
+            
             if ($this->UserGroupPermission->save($userGroupPermission)) {
                 $this->Flash->success(__('The user group permission has been saved.'));
                 return $this->redirect(['action' => 'index']);
@@ -58,8 +63,12 @@ class UserGroupPermissionController extends AppController
                 $this->Flash->error(__('The user group permission could not be saved. Please, try again.'));
             }
         }
-        $permission = $this->UserGroupPermission->Permission->find('list', ['limit' => 200]);
+        $Users = TableRegistry::get('Users');
+        $users = $Users->find()->select(['id','email'])->toArray();
+        
+        $permission = $this->UserGroupPermission->Permission->find()->select(['id','unique_string'])->toArray();
         $this->set(compact('userGroupPermission', 'permission'));
+        $this->set(compact('userGroupPermission', 'users'));
         $this->set('_serialize', ['userGroupPermission']);
     }
 
