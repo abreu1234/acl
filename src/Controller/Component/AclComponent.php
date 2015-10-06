@@ -17,8 +17,10 @@ class AclComponent extends Component
      * @var array
      */
     private $_authorized = [
-        'Permission' => ['index','sync','synchronize'],
-        'UserGroupPermission' => ['index','add','delete','edit']
+        '' => [
+            'Permission' => ['index','sync','synchronize'],
+            'UserGroupPermission' => ['index','add','delete','edit']
+        ]
     ];
 
     public function initialize( array $config )
@@ -35,21 +37,19 @@ class AclComponent extends Component
     {
     	$action = $this->request->param('action');
         $controller = $this->request->param('controller');
+        $prefix = ($this->request->param('prefix') != false ) ? $this->request->param('prefix') : '';
 
-        if( isset($this->_authorized[$controller]) && in_array($action, $this->_authorized[$controller]) ) return true;
+        if( isset($this->_authorized[$prefix]) && isset($this->_authorized[$prefix][$controller]) &&
+            in_array($action, $this->_authorized[$prefix][$controller]) ) return true;
         
         $user_id = $this->request->session()->read('Auth.User.id');
         $UserGroupPermission = TableRegistry::get('UserGroupPermission');
         $Permission = TableRegistry::get('Permission');
 
+        $unique_string = $prefix . '/' . $controller . '->' . $action;
         $permission_id = $Permission->find()
             ->select(['id'])
-            ->where(
-                [
-                    'action'        => $action,
-                    'controller'    => $controller
-                ]
-            )->first();
+            ->where(['unique_string' => $unique_string])->first();
         if( is_null($permission_id) ) return false;
 
         $allow = $UserGroupPermission->find()
