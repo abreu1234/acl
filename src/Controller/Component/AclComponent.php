@@ -2,7 +2,6 @@
 namespace Acl\Controller\Component;
 
 use Cake\Controller\Component;
-use Cake\Controller\ComponentRegistry;
 use Cake\ORM\TableRegistry;
 use ReflectionClass;
 use ReflectionMethod;
@@ -21,6 +20,12 @@ class AclComponent extends Component
         'Permission' => ['index','sync','synchronize'],
         'UserGroupPermission' => ['index','add','delete','edit']
     ];
+
+    public function initialize( array $config )
+    {
+        if( isset($config['authorize']) )
+            $this->_authorized = array_merge_recursive($this->_authorized, $config['authorize']);
+    }
 
     /**
      * Checks whether the user or group is allowed access
@@ -60,18 +65,10 @@ class AclComponent extends Component
 
         return $allow->allow;
     }
-
-    /**
-     * Allows controllers and actions for all users
-     * @param array $_authorized
-     */
-    public function allow(array $_authorized) 
-    {
-        $this->_authorized = array_merge($this->_authorized, $_authorized);
-    }
     
     /**
      * Synchronizes all controllers and existing actions to the database
+     * @param String $prefix
      */
     public function synchronize($prefix = '')
     {
