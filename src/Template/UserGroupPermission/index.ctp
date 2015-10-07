@@ -15,6 +15,7 @@
                 <th><?= $this->Paginator->sort('group_or_user') ?></th>
                 <th><?= $this->Paginator->sort('group_or_user_id') ?></th>
                 <th><?= $this->Paginator->sort('permission_id') ?></th>
+                <th><?= $this->Paginator->sort('allow') ?></th>
                 <th class="actions"><?= __('Actions') ?></th>
             </tr>
         </thead>
@@ -25,6 +26,7 @@
                 <td><?= h($userGroupPermission->group_or_user) ?></td>
                 <td><?= $this->Number->format($userGroupPermission->group_or_user_id) ?></td>
                 <td><?= $userGroupPermission->has('permission') ? $this->Html->link($userGroupPermission->permission->id, ['controller' => 'Permission', 'action' => 'view', $userGroupPermission->permission->id]) : '' ?></td>
+                <td><?= $this->Number->format($userGroupPermission->allow) ?></td>
                 <td class="actions">
                     <?= $this->Html->link(__('View'), ['action' => 'view', $userGroupPermission->id]) ?>
                     <?= $this->Html->link(__('Edit'), ['action' => 'edit', $userGroupPermission->id]) ?>
