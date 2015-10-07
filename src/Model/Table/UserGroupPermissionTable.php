@@ -1,8 +1,6 @@
 <?php
 namespace Acl\Model\Table;
 
-use Acl\Model\Entity\UserGroupPermission;
-use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -62,6 +60,8 @@ class UserGroupPermissionTable extends Table
     public function buildRules(RulesChecker $rules)
     {
         $rules->add($rules->existsIn(['permission_id'], 'Permission'));
+        $rules->add($rules->isUnique(['permission_id', 'group_or_user', 'group_or_user_id']));
+
         return $rules;
     }
 

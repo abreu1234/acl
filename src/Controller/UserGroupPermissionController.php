@@ -55,8 +55,20 @@ class UserGroupPermissionController extends AppController
             $group_or_user_id = explode("-",$this->request->data['group_or_user_id']);
             $userGroupPermission->group_or_user = isset($group_or_user_id[0]) ? $group_or_user_id[0] : null;
             $userGroupPermission->group_or_user_id = isset($group_or_user_id[1]) ? $group_or_user_id[1] : null;
-            
+
             if ($this->UserGroupPermission->save($userGroupPermission)) {
+                $this->Flash->success(__('The user group permission has been saved.'));
+                return $this->redirect(['action' => 'index']);
+            } else if(isset($userGroupPermission->errors('permission_id')['_isUnique'])) {
+
+                $this->UserGroupPermission->updateAll(
+                    ['allow' => $userGroupPermission->allow],
+                    [
+                        'group_or_user' => $userGroupPermission->group_or_user,
+                        'group_or_user_id' => $userGroupPermission->group_or_user_id,
+                        'permission_id' => $userGroupPermission->permission_id
+                    ]
+                );
                 $this->Flash->success(__('The user group permission has been saved.'));
                 return $this->redirect(['action' => 'index']);
             } else {
@@ -65,7 +77,7 @@ class UserGroupPermissionController extends AppController
         }
         $Users = TableRegistry::get('Users');
         $users = $Users->find()->select(['id','email'])->toArray();
-        
+
         $permission = $this->UserGroupPermission->Permission->find()->select(['id','unique_string'])->toArray();
         $this->set(compact('userGroupPermission', 'permission'));
         $this->set(compact('userGroupPermission', 'users'));
