@@ -79,8 +79,7 @@ class UserGroupPermissionController extends AppController
         $users = $Users->find()->select(['id','email'])->toArray();
 
         $permission = $this->UserGroupPermission->Permission->find()->select(['id','unique_string'])->toArray();
-        $this->set(compact('userGroupPermission', 'permission'));
-        $this->set(compact('userGroupPermission', 'users'));
+        $this->set(compact('userGroupPermission', 'permission', 'users'));
         $this->set('_serialize', ['userGroupPermission']);
     }
 
@@ -127,6 +126,34 @@ class UserGroupPermissionController extends AppController
             $this->Flash->error(__('The user group permission could not be deleted. Please, try again.'));
         }
         return $this->redirect(['action' => 'index']);
+    }
+
+    /**
+     * Get all permissions by ajax
+     */
+    public function getPermission()
+    {
+        if($this->request->is('ajax')){
+            $group_or_user_id = isset($this->request->data['group_or_user_id']) ? explode("-",$this->request->data['group_or_user_id']) : '';
+            $group_or_user = isset($group_or_user_id[0]) ? $group_or_user_id[0] : null;
+            $group_or_user_id = isset($group_or_user_id[1]) ? $group_or_user_id[1] : null;
+
+            $ugp = $this->UserGroupPermission->find()
+                ->select(['permission_id','allow'])
+                ->where(
+                    [
+                        'group_or_user_id' => $group_or_user_id,
+                        'group_or_user' => $group_or_user
+                    ])->toArray();
+
+            $response = (!empty($ugp) && !is_null($ugp)) ? $ugp : 'fail';
+
+            $this->set(compact('response'));
+            $this->set('_serialize', ['response']);
+            $this->render('Acl.UserGroupPermission/ajax_response', false);
+        } else {
+            return $this->redirect('/');
+        }
     }
 
 }
