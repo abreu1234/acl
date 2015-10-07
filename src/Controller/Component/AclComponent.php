@@ -20,7 +20,7 @@ class AclComponent extends Component
     private $_authorized = [
         '' => [
             'Permission' => ['index','sync','synchronize'],
-            'UserGroupPermission' => ['index','add','delete','edit']
+            'UserGroupPermission' => ['index','add','delete','edit','getPermission']
         ]
     ];
     
