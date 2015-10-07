@@ -133,27 +133,26 @@ class UserGroupPermissionController extends AppController
      */
     public function getPermission()
     {
-        if($this->request->is('ajax')){
-            $group_or_user_id = isset($this->request->data['group_or_user_id']) ? explode("-",$this->request->data['group_or_user_id']) : '';
-            $group_or_user = isset($group_or_user_id[0]) ? $group_or_user_id[0] : null;
-            $group_or_user_id = isset($group_or_user_id[1]) ? $group_or_user_id[1] : null;
-
-            $ugp = $this->UserGroupPermission->find()
-                ->select(['permission_id','allow'])
-                ->where(
-                    [
-                        'group_or_user_id' => $group_or_user_id,
-                        'group_or_user' => $group_or_user
-                    ])->toArray();
-
-            $response = (!empty($ugp) && !is_null($ugp)) ? $ugp : 'fail';
-
-            $this->set(compact('response'));
-            $this->set('_serialize', ['response']);
-            $this->render('Acl.UserGroupPermission/ajax_response', false);
-        } else {
+        if(!$this->request->is('ajax'))
             return $this->redirect('/');
-        }
+
+        $group_or_user_id = isset($this->request->data['group_or_user_id']) ? explode("-",$this->request->data['group_or_user_id']) : '';
+        $group_or_user = isset($group_or_user_id[0]) ? $group_or_user_id[0] : null;
+        $group_or_user_id = isset($group_or_user_id[1]) ? $group_or_user_id[1] : null;
+
+        $ugp = $this->UserGroupPermission->find()
+            ->select(['permission_id','allow'])
+            ->where(
+                [
+                    'group_or_user_id' => $group_or_user_id,
+                    'group_or_user' => $group_or_user
+                ])->toArray();
+
+        $response = (!empty($ugp) && !is_null($ugp)) ? $ugp : 'fail';
+
+        $this->set(compact('response'));
+        $this->set('_serialize', ['response']);
+        $this->render('Acl.UserGroupPermission/ajax_response', false);
     }
 
 }

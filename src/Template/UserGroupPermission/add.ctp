@@ -1,6 +1,6 @@
 <?= $this->Html->script('Acl.jquery-2.1.4.min'); ?>
 <script>
-    $(document).ready(function(){
+    $(document).ready(function() {
         var group_or_user_id = $('#group_or_user_id').val();
         get_permissions(group_or_user_id);
 
@@ -14,9 +14,11 @@
         $.post( "<?= $this->Url->build(['controller'=>'UserGroupPermission','action'=>'getPermission']) ?>",
             { group_or_user_id: group_or_user_id } )
             .done(function(data) {
-                $.each(JSON.parse(data), function(i, item) {
-                    $('#'+item.permission_id+' .allow').prop("checked", item.allow);
-                });
+                if(data != 'fail') {
+                    $.each(JSON.parse(data), function (i, item) {
+                        $('#' + item.permission_id + ' .allow').prop("checked", item.allow);
+                    });
+                }
             });
     }
 </script>
