@@ -64,5 +64,18 @@ class UserGroupPermissionTable extends Table
 
         return $rules;
     }
+    
+    public function findUserGroupPermission(array $fields, $group_or_user_id, $group_or_user, $permision_id) 
+    {
+        return $this->find()
+            ->select($fields)
+            ->where(
+                [
+                    'group_or_user_id' => $group_or_user_id,
+                    'group_or_user' => $group_or_user,
+                    'permission_id' => $permision_id
+                ]
+            );
+    }
 
 }

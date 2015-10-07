@@ -18,6 +18,10 @@ class PermissionController extends AppController
      */
     public function index()
     {
+        $this->paginate = [
+            'order' => ['unique_string']
+        ];
+        
         $this->set('permission', $this->paginate($this->Permission));
         $this->set('_serialize', ['permission']);
     }

@@ -52,15 +52,11 @@ class UserGroupPermissionController extends AppController
         $userGroupPermission = $this->UserGroupPermission->newEntity();
         if ($this->request->is('post')) {
             $userGroupPermission = $this->UserGroupPermission->patchEntity($userGroupPermission, $this->request->data);
-            $group_or_user_id = explode("-",$this->request->data['group_or_user_id']);
-            $userGroupPermission->group_or_user = isset($group_or_user_id[0]) ? $group_or_user_id[0] : null;
-            $userGroupPermission->group_or_user_id = isset($group_or_user_id[1]) ? $group_or_user_id[1] : null;
 
             if ($this->UserGroupPermission->save($userGroupPermission)) {
                 $this->Flash->success(__('The user group permission has been saved.'));
                 return $this->redirect(['action' => 'index']);
             } else if(isset($userGroupPermission->errors('permission_id')['_isUnique'])) {
-
                 $this->UserGroupPermission->updateAll(
                     ['allow' => $userGroupPermission->allow],
                     [
@@ -81,6 +77,39 @@ class UserGroupPermissionController extends AppController
         $permission = $this->UserGroupPermission->Permission->find()->select(['id','unique_string'])->toArray();
         $this->set(compact('userGroupPermission', 'permission', 'users'));
         $this->set('_serialize', ['userGroupPermission']);
+    }
+    
+    public function addAjax() 
+    {
+        $this->request->allowMethod(['ajax']);
+        $data['group_or_user'] = $this->request->data['group_or_user'];
+        $data['group_or_user_id'] = $this->request->data['group_or_user_id'];
+        $permissions = json_decode($this->request->data['permissions']);
+        
+        foreach($permissions as $permission) {
+            $data['permission_id'] = $permission->id;
+            $data['allow'] = $permission->allow;
+            
+            $userGroupPermission = $this->UserGroupPermission->findUserGroupPermission(
+                    ['id'], $data['group_or_user_id'], $data['group_or_user'], $data['permission_id']
+                )->first();
+            
+            if(!is_null($userGroupPermission)) {
+                $this->UserGroupPermission->get($userGroupPermission->id);
+                $userGroupPermission->allow = $data['allow'];
+            }else {
+                $userGroupPermission = $this->UserGroupPermission->newEntity();
+                $userGroupPermission = $this->UserGroupPermission->patchEntity($userGroupPermission, $data);
+            }
+            
+            $this->UserGroupPermission->save($userGroupPermission);
+        }
+        
+        $this->Flash->success(__('The user group permission has been updated.'));
+        
+        $this->set(compact('response'));
+        $this->set('_serialize', ['response']);
+        $this->render('Acl.UserGroupPermission/ajax_response', false);
     }
 
     /**
@@ -133,12 +162,10 @@ class UserGroupPermissionController extends AppController
      */
     public function getPermission()
     {
-        if(!$this->request->is('ajax'))
-            return $this->redirect('/');
+        $this->request->allowMethod(['ajax']);
 
-        $group_or_user_id = isset($this->request->data['group_or_user_id']) ? explode("-",$this->request->data['group_or_user_id']) : '';
-        $group_or_user = isset($group_or_user_id[0]) ? $group_or_user_id[0] : null;
-        $group_or_user_id = isset($group_or_user_id[1]) ? $group_or_user_id[1] : null;
+        $group_or_user = isset($this->request->data['group_or_user']) ? $this->request->data['group_or_user'] : null;
+        $group_or_user_id = isset($this->request->data['group_or_user_id']) ? $this->request->data['group_or_user_id'] : null;
 
         $ugp = $this->UserGroupPermission->find()
             ->select(['permission_id','allow'])
