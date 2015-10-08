@@ -6,6 +6,7 @@
 </nav>
 <div class="permission index large-9 medium-8 columns content">
     <h3><?= __('Permission') ?></h3>
+    <?= $this->Form->postLink(__('Synchronize permissions'), ['action' => 'synchronize']) ?>
     <table cellpadding="0" cellspacing="0">
         <thead>
             <tr>

@@ -1,1 +1,0 @@
-<?= is_array($response) ? json_encode($response) : $response ?>

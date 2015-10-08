@@ -27,23 +27,7 @@ class UserGroupPermissionController extends AppController
         $this->set(compact('userGroupPermission', 'permission', 'users'));
         $this->set('_serialize', ['userGroupPermission']);
     }
-
-    /**
-     * View method
-     *
-     * @param string|null $id User Group Permission id.
-     * @return void
-     * @throws \Cake\Network\Exception\NotFoundException When record not found.
-     */
-    public function view($id = null)
-    {
-        $userGroupPermission = $this->UserGroupPermission->get($id, [
-            'contain' => ['Permission']
-        ]);
-        $this->set('userGroupPermission', $userGroupPermission);
-        $this->set('_serialize', ['userGroupPermission']);
-    }
-
+    
     /**
      * Add method
      *
@@ -54,14 +38,17 @@ class UserGroupPermissionController extends AppController
         if ($this->request->is('post')) {
             
             $userGroupPermission = $this->UserGroupPermission->findUserGroupPermission(
-                    ['id'], $userGroupPermission->group_or_user_id, $userGroupPermission->group_or_user, $userGroupPermission->permission_id
+                    ['id'], 
+                    $this->request->data['group_or_user_id'], 
+                    $this->request->data['group_or_user'], 
+                    $this->request->data['permission_id']
                 )->first();
             
             if(!is_null($userGroupPermission)) {
                 $this->UserGroupPermission->get($userGroupPermission->id);
-                $userGroupPermission->allow = $data['allow'];
+                $userGroupPermission->allow = $this->request->data['allow'];
             }else {
-                $userGroupPermission = $this->UserGroupPermission->patchEntity($userGroupPermission, $data);
+                $userGroupPermission = $this->UserGroupPermission->patchEntity($userGroupPermission, $this->request->data);
             }
 
             if ($this->UserGroupPermission->save($userGroupPermission)) {
@@ -106,52 +93,7 @@ class UserGroupPermissionController extends AppController
         
         $this->set(compact('response'));
         $this->set('_serialize', ['response']);
-        $this->render('Acl.UserGroupPermission/ajax_response', false);
-    }
-
-    /**
-     * Edit method
-     *
-     * @param string|null $id User Group Permission id.
-     * @return void Redirects on successful edit, renders view otherwise.
-     * @throws \Cake\Network\Exception\NotFoundException When record not found.
-     */
-    public function edit($id = null)
-    {
-        $userGroupPermission = $this->UserGroupPermission->get($id, [
-            'contain' => []
-        ]);
-        if ($this->request->is(['patch', 'post', 'put'])) {
-            $userGroupPermission = $this->UserGroupPermission->patchEntity($userGroupPermission, $this->request->data);
-            if ($this->UserGroupPermission->save($userGroupPermission)) {
-                $this->Flash->success(__('The user group permission has been saved.'));
-                return $this->redirect(['action' => 'index']);
-            } else {
-                $this->Flash->error(__('The user group permission could not be saved. Please, try again.'));
-            }
-        }
-        $permission = $this->UserGroupPermission->Permission->find('list', ['limit' => 200]);
-        $this->set(compact('userGroupPermission', 'permission'));
-        $this->set('_serialize', ['userGroupPermission']);
-    }
-
-    /**
-     * Delete method
-     *
-     * @param string|null $id User Group Permission id.
-     * @return void Redirects to index.
-     * @throws \Cake\Network\Exception\NotFoundException When record not found.
-     */
-    public function delete($id = null)
-    {
-        $this->request->allowMethod(['post', 'delete']);
-        $userGroupPermission = $this->UserGroupPermission->get($id);
-        if ($this->UserGroupPermission->delete($userGroupPermission)) {
-            $this->Flash->success(__('The user group permission has been deleted.'));
-        } else {
-            $this->Flash->error(__('The user group permission could not be deleted. Please, try again.'));
-        }
-        return $this->redirect(['action' => 'index']);
+        $this->render('Acl.Ajax/ajax_response', false);
     }
 
     /**
@@ -176,7 +118,7 @@ class UserGroupPermissionController extends AppController
 
         $this->set(compact('response'));
         $this->set('_serialize', ['response']);
-        $this->render('Acl.UserGroupPermission/ajax_response', false);
+        $this->render('Acl.Ajax/ajax_response', false);
     }
 
 }

@@ -25,16 +25,6 @@ class PermissionController extends AppController
         $this->set('permission', $this->paginate($this->Permission));
         $this->set('_serialize', ['permission']);
     }
-
-    /**
-     * Sync method
-     *
-     * @return void
-     */
-    public function sync()
-    {
-
-    }
     
     /**
      * Synchronizes all controllers and existing actions to the database
