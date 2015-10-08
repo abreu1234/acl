@@ -1,47 +1,113 @@
+<?= $this->Html->script('Acl.jquery-2.1.4.min'); ?>
+<script>
+    $(document).ready(function() {
+        var permissions = new Array();
+        var group_or_user_id = $('#group_or_user_id').val();
+        get_permissions(group_or_user_id);
+
+        $('#group_or_user_id').change(function () {
+            group_or_user_id = $(this).val();
+            get_permissions(group_or_user_id);
+        });
+        
+        $('#ck_all').change(function(){
+            var allow = $(this).prop( "checked" );
+            $('.allow').prop("checked", allow);
+        });
+        
+        $('.allow').change(function() {
+            var allow = $(this).prop( "checked" );
+            var permission_id = $(this).closest('tr').attr('id');
+            var index = objIndexOf(permissions, 'id', permission_id);
+            
+            if( index == -1 ) {
+                permissions.push({id:permission_id, allow:allow});
+            } else {
+                permissions.splice(index, 1);
+            }
+        });
+        
+        $('form').submit(function(event) {
+            event.preventDefault();
+            if( permissions.length == 0 ) 
+                return false;
+            
+            var permissions_json = JSON.stringify(permissions);
+            var group_or_user_id = $('#group_or_user_id').val();
+            var group_or_user_a = group_or_user_id.split('-');
+            
+            $.post( "<?= $this->Url->build(['controller'=>'UserGroupPermission','action'=>'addAjax']) ?>",
+                { group_or_user: group_or_user_a[0], group_or_user_id: group_or_user_a[1], permissions: permissions_json } )
+                .done(function() {
+                    window.location.href = "<?= $this->Url->build(['action'=>'index']) ?>";
+                });
+            
+        });
+    });
+    
+    function objIndexOf(array, attr, value) {
+        for(var i = 0; i < array.length; i += 1) {
+            if(array[i][attr] === value) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function get_permissions(group_or_user_id) {
+        $('.allow').prop("checked", false);
+        var group_or_user_a = group_or_user_id.split('-');
+        
+        $.post( "<?= $this->Url->build(['controller'=>'UserGroupPermission','action'=>'getPermission']) ?>",
+            { group_or_user: group_or_user_a[0], group_or_user_id: group_or_user_a[1] } )
+            .done(function(data) {
+                if(data != 'fail') {
+                    $.each(JSON.parse(data), function (i, item) {
+                        $('#' + item.permission_id + ' .allow').prop("checked", item.allow);
+                    });
+                }
+            });
+    }
+</script>
 <nav class="large-3 medium-4 columns" id="actions-sidebar">
     <ul class="side-nav">
         <li class="heading"><?= __('Actions') ?></li>
-        <li><?= $this->Html->link(__('New User Group Permission'), ['action' => 'add']) ?></li>
+        <li><?= $this->Html->link(__('List User Group Permission'), ['action' => 'index']) ?></li>
         <li><?= $this->Html->link(__('List Permission'), ['controller' => 'Permission', 'action' => 'index']) ?></li>
         <li><?= $this->Html->link(__('New Permission'), ['controller' => 'Permission', 'action' => 'add']) ?></li>
     </ul>
 </nav>
-<div class="userGroupPermission index large-9 medium-8 columns content">
-    <h3><?= __('User Group Permission') ?></h3>
-    <table cellpadding="0" cellspacing="0">
-        <thead>
-            <tr>
-                <th><?= $this->Paginator->sort('id') ?></th>
-                <th><?= $this->Paginator->sort('group_or_user') ?></th>
-                <th><?= $this->Paginator->sort('group_or_user_id') ?></th>
-                <th><?= $this->Paginator->sort('permission_id') ?></th>
-                <th><?= $this->Paginator->sort('allow') ?></th>
-                <th class="actions"><?= __('Actions') ?></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($userGroupPermission as $userGroupPermission): ?>
-            <tr>
-                <td><?= $this->Number->format($userGroupPermission->id) ?></td>
-                <td><?= h($userGroupPermission->group_or_user) ?></td>
-                <td><?= $this->Number->format($userGroupPermission->group_or_user_id) ?></td>
-                <td><?= $userGroupPermission->has('permission') ? $this->Html->link($userGroupPermission->permission->id, ['controller' => 'Permission', 'action' => 'view', $userGroupPermission->permission->id]) : '' ?></td>
-                <td><?= $this->Number->format($userGroupPermission->allow) ?></td>
-                <td class="actions">
-                    <?= $this->Html->link(__('View'), ['action' => 'view', $userGroupPermission->id]) ?>
-                    <?= $this->Html->link(__('Edit'), ['action' => 'edit', $userGroupPermission->id]) ?>
-                    <?= $this->Form->postLink(__('Delete'), ['action' => 'delete', $userGroupPermission->id], ['confirm' => __('Are you sure you want to delete # {0}?', $userGroupPermission->id)]) ?>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-    <div class="paginator">
-        <ul class="pagination">
-            <?= $this->Paginator->prev('< ' . __('previous')) ?>
-            <?= $this->Paginator->numbers() ?>
-            <?= $this->Paginator->next(__('next') . ' >') ?>
-        </ul>
-        <p><?= $this->Paginator->counter() ?></p>
-    </div>
+<div class="userGroupPermission form large-9 medium-8 columns content">
+    <?= $this->Form->create($userGroupPermission) ?>
+        <fieldset>
+            <legend><?= __('Add User Group Permission') ?></legend>
+            <?php
+            foreach ( $users as $user )
+                $options_users['Users']['user-'.$user->id] = $user->email;
+            echo $this->Form->label('group_or_user_id');
+            echo $this->Form->select('group_or_user_id', $options_users, ['id' => 'group_or_user_id']);
+            ?>
+        </fieldset>
+        <table cellpadding="0" cellspacing="0">
+            <thead>
+                <tr>
+                    <th><?= __('Prefix/Controller/Action') ?></th>
+                    <th><?= __('Allow/Deny') ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><?= $this->Form->label(__('All')) ?></td>
+                    <td><?= $this->Form->checkbox('all', ['id'=>'ck_all']) ?></td>
+                </tr>
+                <?php foreach ( $permission as $_permition ) :?>
+                    <tr id="<?= $_permition->id ?>">
+                        <td class="unique_string_td"><?= $_permition->unique_string ?></td>
+                        <td class="allow_td"><?= $this->Form->input('allow', ['label'=>false, 'class'=>'allow']) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?= $this->Form->button(__('Submit')) ?>
+    <?= $this->Form->end() ?>
 </div>

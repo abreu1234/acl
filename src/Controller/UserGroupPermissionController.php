@@ -19,10 +19,12 @@ class UserGroupPermissionController extends AppController
      */
     public function index()
     {
-        $this->paginate = [
-            'contain' => ['Permission']
-        ];
-        $this->set('userGroupPermission', $this->paginate($this->UserGroupPermission));
+        $userGroupPermission = $this->UserGroupPermission->newEntity();
+        $Users = TableRegistry::get('Users');
+        $users = $Users->find()->select(['id','email'])->toArray();
+
+        $permission = $this->UserGroupPermission->Permission->find()->select(['id','unique_string'])->toArray();
+        $this->set(compact('userGroupPermission', 'permission', 'users'));
         $this->set('_serialize', ['userGroupPermission']);
     }
 
@@ -49,36 +51,31 @@ class UserGroupPermissionController extends AppController
      */
     public function add()
     {
-        $userGroupPermission = $this->UserGroupPermission->newEntity();
         if ($this->request->is('post')) {
-            $userGroupPermission = $this->UserGroupPermission->patchEntity($userGroupPermission, $this->request->data);
+            
+            $userGroupPermission = $this->UserGroupPermission->findUserGroupPermission(
+                    ['id'], $userGroupPermission->group_or_user_id, $userGroupPermission->group_or_user, $userGroupPermission->permission_id
+                )->first();
+            
+            if(!is_null($userGroupPermission)) {
+                $this->UserGroupPermission->get($userGroupPermission->id);
+                $userGroupPermission->allow = $data['allow'];
+            }else {
+                $userGroupPermission = $this->UserGroupPermission->patchEntity($userGroupPermission, $data);
+            }
 
             if ($this->UserGroupPermission->save($userGroupPermission)) {
                 $this->Flash->success(__('The user group permission has been saved.'));
-                return $this->redirect(['action' => 'index']);
-            } else if(isset($userGroupPermission->errors('permission_id')['_isUnique'])) {
-                $this->UserGroupPermission->updateAll(
-                    ['allow' => $userGroupPermission->allow],
-                    [
-                        'group_or_user' => $userGroupPermission->group_or_user,
-                        'group_or_user_id' => $userGroupPermission->group_or_user_id,
-                        'permission_id' => $userGroupPermission->permission_id
-                    ]
-                );
-                $this->Flash->success(__('The user group permission has been saved.'));
-                return $this->redirect(['action' => 'index']);
             } else {
                 $this->Flash->error(__('The user group permission could not be saved. Please, try again.'));
             }
         }
-        $Users = TableRegistry::get('Users');
-        $users = $Users->find()->select(['id','email'])->toArray();
-
-        $permission = $this->UserGroupPermission->Permission->find()->select(['id','unique_string'])->toArray();
-        $this->set(compact('userGroupPermission', 'permission', 'users'));
-        $this->set('_serialize', ['userGroupPermission']);
+        return $this->redirect(['action' => 'index']);
     }
     
+    /**
+     * Add by ajax
+     */
     public function addAjax() 
     {
         $this->request->allowMethod(['ajax']);
