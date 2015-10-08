@@ -17,12 +17,7 @@ class AclComponent extends Component
      * 
      * @var array Prefix => Controller => Action
      */
-    private $_authorized = [
-        '' => [
-            'Permission' => ['index','sync','synchronize'],
-            'UserGroupPermission' => ['index','add','delete','edit','getPermission']
-        ]
-    ];
+    private $_authorized = [];
     
     /**
      * Controllers and actions ignored during synchronization
