@@ -3,28 +3,28 @@
     $(document).ready(function() {
         var permissions = new Array();
         var group_or_user_id = $('#group_or_user_id').val();
-        get_permissions(group_or_user_id);
+        getPermissions(group_or_user_id);
 
         $('#group_or_user_id').change(function () {
             group_or_user_id = $(this).val();
-            get_permissions(group_or_user_id);
+            getPermissions(group_or_user_id);
         });
         
         $('#ck_all').change(function(){
             var allow = $(this).prop( "checked" );
-            $('.allow').prop("checked", allow);
+            $('.allow').each(function(){                   
+                if ($(this).prop( "checked") != allow) {
+                    $(this).prop("checked", allow);
+                    var permission_id = $(this).closest('tr').attr('id');
+                    enqueuePermissions(permission_id, allow);
+                }
+            });
         });
         
         $('.allow').change(function() {
             var allow = $(this).prop( "checked" );
             var permission_id = $(this).closest('tr').attr('id');
-            var index = objIndexOf(permissions, 'id', permission_id);
-            
-            if( index == -1 ) {
-                permissions.push({id:permission_id, allow:allow});
-            } else {
-                permissions.splice(index, 1);
-            }
+            enqueuePermissions(permission_id, allow);
         });
         
         $('form').submit(function(event) {
@@ -43,6 +43,16 @@
                 });
             
         });
+        
+        function enqueuePermissions(permission_id, allow) {
+            var index = objIndexOf(permissions, 'id', permission_id);
+            
+            if( index == -1 ) {
+                permissions.push({id:permission_id, allow:allow});
+            } else if( permissions[index].allow != allow ) {
+                permissions.splice(index, 1);
+            }
+        }
     });
     
     function objIndexOf(array, attr, value) {
@@ -54,7 +64,7 @@
         return -1;
     }
 
-    function get_permissions(group_or_user_id) {
+    function getPermissions(group_or_user_id) {
         $('.allow').prop("checked", false);
         var group_or_user_a = group_or_user_id.split('-');
         
