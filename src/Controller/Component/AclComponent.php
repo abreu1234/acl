@@ -5,6 +5,7 @@ use Cake\Controller\Component;
 use Cake\ORM\TableRegistry;
 use ReflectionClass;
 use ReflectionMethod;
+use Cake\Network\Exception\NotImplementedException;
 
 /**
  * Acl component
@@ -30,6 +31,13 @@ class AclComponent extends Component
             '*'  => ['beforeFilter', 'afterFilter', 'initialize']
         ]
     ];
+    
+    /**
+     * Controllers groups and users
+     * 
+     * @var Array 
+     */
+    private $controllers = ['group'=>'','user'=>''];
 
     public function initialize( array $config )
     {
@@ -38,6 +46,14 @@ class AclComponent extends Component
         
         if( isset($config['ignore']) )
             $this->_sync_ignore_list = array_merge_recursive($this->_sync_ignore_list, $config['ignore']);
+        
+        if( isset($config['controllers']) ) {
+            $this->controllers = array_merge($this->controllers, $config['controllers']);
+        }
+        
+        if( empty($this->controllers['user']) )
+            die('Acl: Controller user not set');
+
     }
 
     /**
@@ -54,6 +70,12 @@ class AclComponent extends Component
             in_array($action, $this->_authorized[$prefix][$controller]) ) return true;
         
         $user_id = $this->request->session()->read('Auth.User.id');
+        $group_id = -1;
+        if( isset($this->controllers['group']) ) {
+            $User = TableRegistry::get($this->controllers['user']);
+            $group_id = $User->get($user_id)->group_id;
+        }
+        
         $UserGroupPermission = TableRegistry::get('UserGroupPermission');
         $Permission = TableRegistry::get('Permission');
 
@@ -69,11 +91,16 @@ class AclComponent extends Component
                 [
                     'group_or_user'     => 'user',
                     'group_or_user_id'  => $user_id,
-                    'permission_id'     => $permission_id->id
-                ]
-            )->first();
+                    
+                ])
+            ->orWhere(
+                [
+                    'group_or_user'     => 'group',
+                    'group_or_user_id'  => $group_id
+                ])->andWhere(['permission_id' => $permission_id->id])
+            ->order(['allow'=>'DESC'])->first();
         if( is_null($allow) ) return false;
-
+            
         return $allow->allow;
     }
     
@@ -138,6 +165,11 @@ class AclComponent extends Component
         }
         
         $Permission->deleteAll(['id NOT IN'=>$permission_ids, 'prefix'=>$prefix]);
+    }
+    
+    public function getControllers() 
+    {
+        return $this->controllers;
     }
 
 }

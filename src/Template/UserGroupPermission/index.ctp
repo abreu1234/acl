@@ -93,6 +93,10 @@
             <?php
             foreach ( $users as $user )
                 $options_users['Users']['user-'.$user->id] = $user->email;
+            
+            foreach ( $groups as $group )
+                $options_users['Groups']['group-'.$group->id] = $group->name;
+            
             echo $this->Form->label('group_or_user_id');
             echo $this->Form->select('group_or_user_id', $options_users, ['id' => 'group_or_user_id']);
             ?>
