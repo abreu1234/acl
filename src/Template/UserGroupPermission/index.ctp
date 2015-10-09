@@ -31,7 +31,8 @@
             event.preventDefault();
             if( permissions.length == 0 ) 
                 return false;
-            
+
+            $('#submit').prop("disabled", true);
             var permissions_json = JSON.stringify(permissions);
             var group_or_user_id = $('#group_or_user_id').val();
             var group_or_user_a = group_or_user_id.split('-');
@@ -40,6 +41,7 @@
                 { group_or_user: group_or_user_a[0], group_or_user_id: group_or_user_a[1], permissions: permissions_json } )
                 .done(function() {
                     window.location.href = "<?= $this->Url->build(['action'=>'index']) ?>";
+                    $('#submit').prop("disabled", false);
                 });
             
         });
@@ -121,6 +123,6 @@
                 <?php endforeach; ?>
             </tbody>
         </table>
-    <?= $this->Form->button(__('Submit')) ?>
+    <?= $this->Form->button(__('Submit'), ['id'=>'submit']) ?>
     <?= $this->Form->end() ?>
 </div>
