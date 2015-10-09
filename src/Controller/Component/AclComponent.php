@@ -107,29 +107,27 @@ class AclComponent extends Component
     /**
      * Synchronizes all controllers and existing actions to the database
      * 
-     * @param boolean $plugin
-     * @param String $prefix
+     * @param boolean/String $prefix
+     * @param boolean/String $plugin
+     * @param array $permission_ids
+     * @return array $permission_ids
      */
-    public function synchronize( $prefix = false, $plugin = false )
+    public function synchronize( $prefix = false, $plugin = false, array $permission_ids = [] )
     {
-        $unique_string = $classname = '';
+        $classname = '';
         if( !$plugin ) {
-            $this->log( "Chamou o app prefixo: $prefix" );
             $path = App::path('Controller/'.$prefix)[0];            
         } else {
             if($prefix) {
-                $this->log( "Chamou Plugin: $plugin de prefixo: $prefix");
                 $path = App::path('Controller/'.$prefix, $plugin)[0];
                 $classname = $plugin.'.';
             } else {
-                $this->log( "Chamou Plugin: $plugin pela primeira vez");
                 $path = App::path('Plugin')[0];
             }            
         }
         $type_prefix = ( $prefix === '/' || is_bool($prefix) ) ? '' : '/'.$prefix;
                  
         $Permission = TableRegistry::get('Permission');
-        $permission_ids = [];
         
         $files = scandir($path);
         $permission_prefix = '';
@@ -140,9 +138,9 @@ class AclComponent extends Component
 
             if( is_dir($path.$file) ) {
                 if( $prefix || !$plugin )
-                    $this->synchronize($file, $plugin);
+                    $permission_ids = $this->synchronize($file, $plugin, $permission_ids);
                 else if( $plugin )
-                    $this->synchronize('/', $file);
+                    $permission_ids = $this->synchronize('/', $file, $permission_ids);
                 continue;
             }
             
@@ -165,7 +163,7 @@ class AclComponent extends Component
                     ( isset($this->_sync_ignore_list[$permission_prefix][$controller_name]) && in_array($action->name, $this->_sync_ignore_list[$permission_prefix][$controller_name]) )
                 ) continue;
                 
-                $unique_string .= $controller_name . '->' . $action->name;
+                $unique_string .= '/'.$controller_name . '->' . $action->name;
                 $permission_id = $Permission->find()
                     ->select(['id'])
                     ->where(['unique_string' => $unique_string])
@@ -186,10 +184,13 @@ class AclComponent extends Component
                 }
             }
         }
-        
-        $Permission->deleteAll(['id NOT IN'=>$permission_ids, 'prefix'=>$permission_prefix]);
-        if( !$plugin && !$prefix ) 
-            $this->synchronize('', true);
+
+        if( !$plugin && !$prefix ) {
+            $permission_ids = $this->synchronize('', true, $permission_ids);
+            $Permission->deleteAll(['id NOT IN'=>$permission_ids]);
+        }
+
+        return $permission_ids;
     }
     
     public function getControllers() 
