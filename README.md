@@ -75,16 +75,20 @@ Para ignorar alguma pasta ou arquivo durante a sincronização basta adicionar a
 com a seguinte sintaxe `Prefixo->Pasta/Arquivo->Action`. Para ignorar todos os prefixos ou pasta de um prefixo 
 adicione `*`
 ```php
-$this->loadComponent('Acl.Acl', 
-	'*' => [
-            '.','..','Component','AppController.php','empty',
-            '*'  => ['beforeFilter', 'afterFilter', 'initialize'],
-            'Permission'  => ['add']
-        ],
-        'Admin' => [
-        	'Users' => ['delete']
+$this->loadComponent('Acl.Acl', [
+	'controllers' =>['user'=>'Users','group'=>'Groups'],
+	'plugins' => ['PluginName'],
+	'ignore' => [
+		'*' => [
+	            '.','..','Component','AppController.php','empty',
+	            '*'  => ['beforeFilter', 'afterFilter', 'initialize'],
+	            'Permission'  => ['add']
+	        ],
+	        'Admin' => [
+	        	'Users' => ['delete']
+	        ]
         ]
-);
+]);
 ```
 
 ## Dando permissão
@@ -153,10 +157,10 @@ Após remover as linhas
 
 ## Sincronizando 
 Para sincronizar os controllers e actions basta ir até o endereço: `/acl/permission` e clicar no link de sincronização
-é importante o usuário ter permição de acesso ao controller `Permission` e Actions `index` e `synchronize`
+é importante o usuário ter permissão de acesso ao controller `Permission` e Actions `index` e `synchronize`
 
 ## Gerenciando permissões
 Para gerenciar as permissões dos usuários ou grupos bastar ir até o endereço : `/acl/user-group-permission`
 Selecionar o usuário ou grupo e a as permissões.
-Para funcionar o usuário é preciso ter sincronizado as permissões e ter permição de acesso ao 
+Para funcionar o usuário é preciso ter sincronizado as permissões e ter permissão de acesso ao 
 controller `UserGroupPermission` e Actions `index`, `getPermission` e `addAjax`
