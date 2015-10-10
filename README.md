@@ -57,6 +57,36 @@ Caso você utilize grupos adicionar o nome do controller de grupos também
 $this->loadComponent('Acl.Acl', ['controllers' =>['user'=>'Users','group'=>'Groups']]);
 ```
 
+## Sincronizar controllers de plugins
+Para sincronizar os controllers de plugins basta adicionar a configuração a índice `plugins`
+```php
+$this->loadComponent('Acl.Acl', 
+	[
+		'controllers' =>['user'=>'Users','group'=>'Groups'],
+		'plugins' => ['PluginName']
+	]
+
+);
+```
+Por padrão o plugin este plugin irá sincronizar os controlelrs
+
+## Ignorando pastas e arquivos
+Para ignorar alguma pasta ou arquivo durante a sincronização basta adicionar a configuração o índice `ignore`
+com a seguinte sintaxe `Prefixo->Pasta/Arquivo->Action`. Para ignorar todos os prefixos ou pasta de um prefixo 
+adicione `*`
+```php
+$this->loadComponent('Acl.Acl', 
+	'*' => [
+            '.','..','Component','AppController.php','empty',
+            '*'  => ['beforeFilter', 'afterFilter', 'initialize'],
+            'Permission'  => ['add']
+        ],
+        'Admin' => [
+        	'Users' => ['delete']
+        ]
+);
+```
+
 ## Dando permissão
 
 Para dar permissão para algum controller sem precisar do banco de dados
