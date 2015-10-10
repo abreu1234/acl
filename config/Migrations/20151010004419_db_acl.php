@@ -38,7 +38,7 @@ class DbAcl extends AbstractMigration
     public function change()
     {
         $table = $this->table('permission');
-        $table->addColumn('prefix', 'integer', ['null'=>true,'limit'=>100])
+        $table->addColumn('prefix', 'string', ['null'=>true,'limit'=>100])
             ->addColumn('controller', 'string', ['null'=>false,'limit'=>20])
             ->addColumn('action', 'string', ['null'=>false,'limit'=>100])
             ->addColumn('unique_string', 'string', ['null'=>false,'limit'=>130])
