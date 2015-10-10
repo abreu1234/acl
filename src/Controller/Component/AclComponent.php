@@ -42,6 +42,8 @@ class AclComponent extends Component
             '*'  => ['beforeFilter', 'afterFilter', 'initialize']
         ],
     ];
+
+    private $_plugins = ['Acl'];
     
     /**
      * Controllers groups and users
@@ -52,19 +54,19 @@ class AclComponent extends Component
 
     public function initialize( array $config )
     {
+        if( isset($config['controllers']) )
+            $this->controllers = array_merge($this->controllers, $config['controllers']);
+        if( empty($this->controllers['user']) )
+            die('Acl: Controller user not set');
+
         if( isset($config['authorize']) )
             $this->_authorized = array_merge_recursive($this->_authorized, $config['authorize']);
         
         if( isset($config['ignore']) )
             $this->_sync_ignore_list = array_merge_recursive($this->_sync_ignore_list, $config['ignore']);
-        
-        if( isset($config['controllers']) ) {
-            $this->controllers = array_merge($this->controllers, $config['controllers']);
-        }
-        
-        if( empty($this->controllers['user']) )
-            die('Acl: Controller user not set');
 
+        if( isset($config['plugins']) )
+            $this->_plugins = array_merge($this->_plugins, $config['plugins']);
     }
 
     /**
@@ -130,18 +132,13 @@ class AclComponent extends Component
         $classname = '';
         if( !$plugin ) {
             $path = App::path('Controller/'.$prefix)[0];            
-        } else {
-            if($prefix) {
-                $path = App::path('Controller/'.$prefix, $plugin)[0];
-                $classname = $plugin.'.';
-            } else {
-                $path = App::path('Plugin')[0];
-            }            
+        } else if( $plugin && is_string($prefix) ) {
+            $path = App::path('Controller/' . $prefix, $plugin)[0];
+            $classname = $plugin . '.';
         }
+
         $type_prefix = ( $prefix === '/' || is_bool($prefix) ) ? '' : '/'.$prefix;
-                 
         $Permission = TableRegistry::get('Permission');
-        
         $files = scandir($path);
         foreach($files as $file) {
             if(in_array($file, $this->_sync_ignore_list['*']) ||
@@ -175,7 +172,7 @@ class AclComponent extends Component
                 ) continue;
 
                 $unique_string = $this->getUniqueString($controller_name, $action->name, $prefix, $plugin);
-                $this->log($unique_string);
+                $this->log('UNIQUE STRING: '.$unique_string);
                 $permission_id = $Permission->find()
                     ->select(['id'])
                     ->where(['unique_string' => $unique_string])
@@ -198,7 +195,9 @@ class AclComponent extends Component
         }
 
         if( !$plugin && !$prefix ) {
-            $permission_ids = $this->synchronize('', true, $permission_ids);
+            foreach( $this->_plugins as $plugin )
+                $permission_ids = $this->synchronize('/', $plugin, $permission_ids);
+
             $Permission->deleteAll(['id NOT IN'=>$permission_ids]);
         }
 
