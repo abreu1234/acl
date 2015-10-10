@@ -64,10 +64,12 @@ class AclComponent extends Component
     {
     	$action = $this->request->param('action');
         $controller = $this->request->param('controller');
-        $prefix = ($this->request->param('prefix') != false ) ? $this->request->param('prefix') : '';
-        
-        if( isset($this->_authorized[$prefix][$controller]) &&
-            in_array($action, $this->_authorized[$prefix][$controller]) ) return true;
+        $prefix = ($this->request->param('prefix') === false) ? '/' : $this->request->param('prefix');
+        $plugin = ($this->request->param('plugin') === false) ? '' : $this->request->param('plugin');
+
+        $plugin_prefix = (empty($plugin)) ? $prefix : $plugin . '.' . $prefix;
+        if( isset($this->_authorized[$plugin_prefix][$controller]) &&
+            in_array($action, $this->_authorized[$plugin_prefix][$controller]) ) return true;
         
         $user_id = $this->request->session()->read('Auth.User.id');
         $group_id = -1;
@@ -79,7 +81,7 @@ class AclComponent extends Component
         $UserGroupPermission = TableRegistry::get('UserGroupPermission');
         $Permission = TableRegistry::get('Permission');
 
-        $unique_string = $prefix . '/' . $controller . '->' . $action;
+        $unique_string = $this->getUniqueString($controller, $action, $prefix, $plugin);
         $permission_id = $Permission->find()
             ->select(['id'])
             ->where(['unique_string' => $unique_string])->first();
@@ -130,7 +132,6 @@ class AclComponent extends Component
         $Permission = TableRegistry::get('Permission');
         
         $files = scandir($path);
-        $permission_prefix = '';
         foreach($files as $file) {
             if(in_array($file, $this->_sync_ignore_list['*']) ||
                 ( isset($this->_sync_ignore_list[$prefix]) && in_array($file, $this->_sync_ignore_list[$prefix]) )
@@ -150,20 +151,20 @@ class AclComponent extends Component
             $all_actions = $class->getMethods(ReflectionMethod::IS_PUBLIC);
             
             foreach($all_actions as $action) {
-                $unique_string = '';
-                if( $plugin ) {
-                    $permission_prefix = $unique_string .= $plugin.'.';
-                }
+                $permission_prefix = '';
+                if( $plugin )
+                    $permission_prefix .= $plugin.'.';
                 if( $prefix )
-                    $permission_prefix = $unique_string .= $prefix;
+                    $permission_prefix .= $prefix;
                 
                 if($action->class != $class_name || in_array($action->name, $this->_sync_ignore_list['*']['*']) ||
                     ( isset($this->_sync_ignore_list['*'][$controller_name]) && in_array($action->name, $this->_sync_ignore_list['*'][$controller_name]) ) ||                      
                     ( isset($this->_sync_ignore_list[$permission_prefix]['*']) && in_array($action->name, $this->_sync_ignore_list[$permission_prefix]['*']) ) ||                      
                     ( isset($this->_sync_ignore_list[$permission_prefix][$controller_name]) && in_array($action->name, $this->_sync_ignore_list[$permission_prefix][$controller_name]) )
                 ) continue;
-                
-                $unique_string .= '/'.$controller_name . '->' . $action->name;
+
+                $unique_string = $this->getUniqueString($controller_name, $action->name, $prefix, $plugin);
+                $this->log($unique_string);
                 $permission_id = $Permission->find()
                     ->select(['id'])
                     ->where(['unique_string' => $unique_string])
@@ -191,6 +192,25 @@ class AclComponent extends Component
         }
 
         return $permission_ids;
+    }
+
+    /**
+     * Create unique string acl
+     *
+     * @param $controller
+     * @param $action
+     * @param bool/String $prefix
+     * @param bool/String $plugin
+     * @return string
+     */
+    private function getUniqueString( $controller, $action, $prefix = false, $plugin = false ) {
+        $unique_string = '';
+        if( $plugin && !empty($plugin) )
+            $unique_string .= $plugin.'.';
+        if( $prefix && $prefix != '/' )
+            $unique_string .= $prefix;
+
+        return $unique_string . '/' . $controller . '->' . $action;
     }
     
     public function getControllers() 
