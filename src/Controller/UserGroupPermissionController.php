@@ -44,7 +44,8 @@ class UserGroupPermissionController extends AppController
             $groups = $groups->find()->select(['id','name'])->toArray();
         }
 
-        $permission = $this->UserGroupPermission->Permission->find()->select(['id','unique_string'])->toArray();
+        $permission = $this->UserGroupPermission->Permission->find()->select(['id','unique_string'])
+            ->order(['unique_string'=>'DESC'])->toArray();
         $this->set(compact('userGroupPermission', 'permission', 'users', 'groups'));
         $this->set('_serialize', ['userGroupPermission']);
     }
