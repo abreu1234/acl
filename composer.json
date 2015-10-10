@@ -1,5 +1,5 @@
 {
-    "name": "abreu1234/Acl",
+    "name": "abreu1234/acl",
     "description": "Acl plugin for CakePHP",
     "type": "cakephp-plugin",
     "require": {
