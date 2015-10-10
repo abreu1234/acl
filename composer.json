@@ -2,6 +2,8 @@
     "name": "abreu1234/acl",
     "description": "Acl plugin for CakePHP",
     "type": "cakephp-plugin",
+    "license": "MIT",
+    "homepage": "https://github.com/abreu1234/acl",
     "require": {
         "php": ">=5.4.16",
         "cakephp/cakephp": "~3.0"
