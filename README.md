@@ -155,6 +155,21 @@ Após remover as linhas
       ],
 ```
 
+## Método isAuthorized
+Para fazer a validação do usuário ou grupo, use o método isAuthorized do complemento Auth. Adicione no 
+arquivo `AppController.php` o seguinte código.
+```php
+    public function isAuthorized($user)
+    {
+        if(!$this->Acl->check()) {
+            $this->Flash->error(__('User or group no access permission!'));
+            return false;
+        }
+
+        return true;
+    }
+```
+
 ## Sincronizando 
 Para sincronizar os controllers e actions basta ir até o endereço: `/acl/permission` e clicar no link de sincronização
 é importante o usuário ter permissão de acesso ao controller `Permission` e Actions `index` e `synchronize`
