@@ -155,6 +155,7 @@ class AclComponent extends Component
             
             $controller_name = str_replace('Controller', '', explode('.', $file)[0]);
             $class_name = App::classname($classname.$controller_name, 'Controller'.$type_prefix, 'Controller');
+            if( empty($class_name) ) continue;
             $class = new ReflectionClass($class_name);
             $all_actions = $class->getMethods(ReflectionMethod::IS_PUBLIC);
             
