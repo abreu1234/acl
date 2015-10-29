@@ -26,31 +26,33 @@ class AclComponent extends Component
 
     /**
      * Controllers and actions allowed for all users
-     * 
+     *
      * @var array Prefix => Controller => Action
      */
     private $_authorized = [];
-    
+
     /**
      * Controllers and actions ignored during synchronization
-     * 
+     *
      * @var Array Prefix => Controller => Action
      */
     private $_sync_ignore_list = [
         '*' => [
-            '.','..','Component','AppController.php','empty',
-            '*'  => ['beforeFilter', 'afterFilter', 'initialize']
+            '.','..','Component','AppController.php','empty','Controller.php',
+            '*'  => ['beforeFilter','afterFilter','initialize']
         ],
     ];
 
     private $_plugins = ['Acl'];
-    
+
     /**
      * Controllers groups and users
-     * 
-     * @var Array 
+     *
+     * @var Array
      */
     private $controllers = ['group'=>'','user'=>''];
+
+    private $all_files = [];
 
     public function initialize( array $config )
     {
@@ -61,7 +63,7 @@ class AclComponent extends Component
 
         if( isset($config['authorize']) )
             $this->_authorized = array_merge_recursive($this->_authorized, $config['authorize']);
-        
+
         if( isset($config['ignore']) )
             $this->_sync_ignore_list = array_merge_recursive($this->_sync_ignore_list, $config['ignore']);
 
@@ -83,14 +85,14 @@ class AclComponent extends Component
         $plugin_prefix = (empty($plugin)) ? $prefix : $plugin . '.' . $prefix;
         if( isset($this->_authorized[$plugin_prefix][$controller]) &&
             in_array($action, $this->_authorized[$plugin_prefix][$controller]) ) return true;
-        
+
         $user_id = $this->request->session()->read('Auth.User.id');
         $group_id = -1;
         if( isset($this->controllers['group']) ) {
             $User = TableRegistry::get($this->controllers['user']);
             $group_id = $User->get($user_id)->group_id;
         }
-        
+
         $UserGroupPermission = TableRegistry::get('UserGroupPermission');
         $Permission = TableRegistry::get('Permission');
 
@@ -106,7 +108,7 @@ class AclComponent extends Component
                 [
                     'group_or_user'     => 'user',
                     'group_or_user_id'  => $user_id,
-                    
+
                 ])
             ->orWhere(
                 [
@@ -115,13 +117,13 @@ class AclComponent extends Component
                 ])->andWhere(['permission_id' => $permission_id->id])
             ->order(['allow'=>'DESC'])->first();
         if( is_null($allow) ) return false;
-            
+
         return $allow->allow;
     }
-    
+
     /**
      * Synchronizes all controllers and existing actions to the database
-     * 
+     *
      * @param boolean/String $prefix
      * @param boolean/String $plugin
      * @param array $permission_ids
@@ -131,7 +133,7 @@ class AclComponent extends Component
     {
         $classname = '';
         if( !$plugin ) {
-            $path = App::path('Controller/'.$prefix)[0];            
+            $path = App::path('Controller/'.$prefix)[0];
         } else if( $plugin && is_string($prefix) ) {
             $path = App::path('Controller/' . $prefix, $plugin)[0];
             $classname = $plugin . '.';
@@ -140,7 +142,9 @@ class AclComponent extends Component
         $type_prefix = ( $prefix === '/' || is_bool($prefix) ) ? '' : '/'.$prefix;
         $Permission = TableRegistry::get('Permission');
         $files = scandir($path);
+        $this->all_files = array_merge($this->all_files, $files);
         foreach($files as $file) {
+
             if(in_array($file, $this->_sync_ignore_list['*']) ||
                 ( isset($this->_sync_ignore_list[$prefix]) && in_array($file, $this->_sync_ignore_list[$prefix]) )
             ) continue;
@@ -152,28 +156,31 @@ class AclComponent extends Component
                     $permission_ids = $this->synchronize('/', $file, $permission_ids);
                 continue;
             }
-            
+
             $controller_name = str_replace('Controller', '', explode('.', $file)[0]);
             $class_name = App::classname($classname.$controller_name, 'Controller'.$type_prefix, 'Controller');
             if( empty($class_name) ) continue;
             $class = new ReflectionClass($class_name);
             $all_actions = $class->getMethods(ReflectionMethod::IS_PUBLIC);
-            
+
             foreach($all_actions as $action) {
                 $permission_prefix = '';
                 if( $plugin )
                     $permission_prefix .= $plugin.'.';
                 if( $prefix )
                     $permission_prefix .= $prefix;
-                
-                if($action->class != $class_name || in_array($action->name, $this->_sync_ignore_list['*']['*']) ||
-                    ( isset($this->_sync_ignore_list['*'][$controller_name]) && in_array($action->name, $this->_sync_ignore_list['*'][$controller_name]) ) ||                      
-                    ( isset($this->_sync_ignore_list[$permission_prefix]['*']) && in_array($action->name, $this->_sync_ignore_list[$permission_prefix]['*']) ) ||                      
+
+                $class = new ReflectionClass($action->class);
+                $file_name = explode('/',$class->getFileName());
+                $file_name = end($file_name);
+                if( in_array($file_name, $this->_sync_ignore_list['*']) || ($action->class != $class_name && !in_array($file_name, $this->all_files)) ||
+                    in_array($action->name, $this->_sync_ignore_list['*']['*']) ||
+                    ( isset($this->_sync_ignore_list['*'][$controller_name]) && in_array($action->name, $this->_sync_ignore_list['*'][$controller_name]) ) ||
+                    ( isset($this->_sync_ignore_list[$permission_prefix]['*']) && in_array($action->name, $this->_sync_ignore_list[$permission_prefix]['*']) ) ||
                     ( isset($this->_sync_ignore_list[$permission_prefix][$controller_name]) && in_array($action->name, $this->_sync_ignore_list[$permission_prefix][$controller_name]) )
                 ) continue;
 
                 $unique_string = $this->getUniqueString($controller_name, $action->name, $prefix, $plugin);
-                $this->log('UNIQUE STRING: '.$unique_string);
                 $permission_id = $Permission->find()
                     ->select(['id'])
                     ->where(['unique_string' => $unique_string])
@@ -188,7 +195,7 @@ class AclComponent extends Component
 
                     if ($Permission->save($new_permission))
                         array_push($permission_ids, $new_permission->id);
-                    
+
                 } else {
                     array_push($permission_ids, $permission_id->id);
                 }
@@ -223,8 +230,8 @@ class AclComponent extends Component
 
         return $unique_string . '/' . $controller . '->' . $action;
     }
-    
-    public function getControllers() 
+
+    public function getControllers()
     {
         return $this->controllers;
     }
